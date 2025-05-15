@@ -5,6 +5,8 @@ let jugador = {};
 let enemigo = {};
 let ataquePendiente = null;
 let ataqueRecibido = null;
+let listoYo = false;
+let listoOtro = false;
 
 peer.on('open', id => {
   document.getElementById('my-id').value = id;
@@ -38,8 +40,9 @@ function establecerConexion() {
     } else if (data.tipo === "ataque") {
       ataqueRecibido = data.datos;
       log(`Ataque recibido, esperando que ambos estén listos...`);
-    } else if (data.tipo === "resolucion") {
-      aplicarDanios();
+    } else if (data.tipo === "listo") {
+      listoOtro = true;
+      intentarResolucion();
     }
   });
 }
@@ -70,6 +73,20 @@ function enviarAtaque() {
   log(`${jugador.nombre} preparó su ataque.`);
 }
 
+function confirmarListo() {
+  listoYo = true;
+  conn.send({ tipo: "listo" });
+  intentarResolucion();
+}
+
+function intentarResolucion() {
+  if (listoYo && listoOtro) {
+    aplicarDanios();
+    listoYo = false;
+    listoOtro = false;
+  }
+}
+
 function aplicarDanios() {
   if (ataquePendiente) {
     log(`${jugador.nombre} lanzó d20: ${ataquePendiente.d20}`);
@@ -91,13 +108,20 @@ function aplicarDanios() {
     }
   }
 
-  actualizarEstado();
   ataquePendiente = null;
   ataqueRecibido = null;
-}
+  actualizarEstado();
 
-function confirmarListo() {
-  conn.send({ tipo: "resolucion" });
+  if (jugador.vida <= 0 || enemigo.vida <= 0) {
+    const mensaje = jugador.vida <= 0 ? "¡Has perdido!" : "¡Has ganado!";
+    log(mensaje);
+    document.querySelector("button[onclick='enviarAtaque()']").disabled = true;
+    document.querySelector("button[onclick='confirmarListo()']").disabled = true;
+    const reinicioBtn = document.createElement("button");
+    reinicioBtn.textContent = "Reiniciar";
+    reinicioBtn.onclick = () => location.reload();
+    document.getElementById("juego").appendChild(reinicioBtn);
+  }
 }
 
 function actualizarEstado() {
