@@ -125,6 +125,10 @@ function iniciarCombate() {
   document.getElementById('seleccion-personaje').style.display = 'none';
   document.getElementById('juego').style.display = 'block';
 
+  // Ajustar estado botones para nuevo turno
+  document.getElementById('btn-atacar').disabled = false;
+  document.getElementById('btn-listo').disabled = true;
+
   actualizarEstado();
   log("¡Combate iniciado! Prepará tu ataque.");
 }
@@ -147,6 +151,10 @@ function enviarAtaque() {
   ataquePropio = { tiradaD20, tiradaD6 };
   conn.send({ type: "ataque", ataque: ataquePropio });
   log(`Preparaste tu ataque: D20=${tiradaD20}, D${jugador.dadoDanio}=${tiradaD6}`);
+
+  // Deshabilitar botón de atacar y habilitar botón listo
+  document.getElementById('btn-atacar').disabled = true;
+  document.getElementById('btn-listo').disabled = false;
 }
 
 function confirmarListo() {
@@ -161,6 +169,10 @@ function confirmarListo() {
   listoPropio = true;
   conn.send({ type: "listo", ataque: ataquePropio });
   log("Confirmaste estar listo.");
+
+  // Deshabilitar botón listo para evitar múltiples clicks
+  document.getElementById('btn-listo').disabled = true;
+
   if (listoOponente && peer.id < conn.peer) {
     resolverTurno();
   }
@@ -195,61 +207,53 @@ function resolverTurno() {
     vidaRival: vidaRival
   });
 
+  // Resetear estados de ataque y listo al terminar turno
   ataquePropio = null;
   ataqueOponente = null;
   listoPropio = false;
   listoOponente = false;
 
-  if (vidaJugador === 0 || vidaRival === 0) {
+  // Reactivar botones para nuevo turno solo si juego no terminó
+  if (vidaJugador > 0 && vidaRival > 0) {
+    document.getElementById('btn-atacar').disabled = false;
+    document.getElementById('btn-listo').disabled = true;
+  } else {
     terminarJuego();
   }
 }
 
 function actualizarEstado() {
-  document.getElementById('estado').textContent =
-    `${jugador.nombre} (${jugador.tipo}) - Vida: ${vidaJugador} vs ` +
-    `${enemigo.nombre || '...'} (${enemigo.tipo || '?'}) - Vida: ${vidaRival}`;
+  document.getElementById('estado').textContent = `Tu vida: ${vidaJugador} | Vida del oponente: ${vidaRival}`;
+}
+
+function terminarJuego() {
+  if (vidaJugador <= 0 && vidaRival <= 0) {
+    log("Empate! Ambos monstruos cayeron.");
+    alert("Empate! Ambos monstruos cayeron.");
+  } else if (vidaJugador <= 0) {
+    log(`Perdiste! ${enemigo.nombre} ganó.`);
+    alert(`Perdiste! ${enemigo.nombre} ganó.`);
+  } else if (vidaRival <= 0) {
+    log(`Ganaste! ${jugador.nombre} ganó.`);
+    alert(`Ganaste! ${jugador.nombre} ganó.`);
+  }
+  document.getElementById('btn-atacar').disabled = true;
+  document.getElementById('btn-listo').disabled = true;
+  document.getElementById('btn-reiniciar').style.display = 'inline-block';
+}
+
+function reiniciarCombate() {
+  location.reload();
+}
+
+function desconectar() {
+  if (conn) conn.close();
+  if (peer) peer.destroy();
+  location.reload();
 }
 
 function log(mensaje) {
   const logDiv = document.getElementById('log');
-  const p = document.createElement('p');
-  p.textContent = mensaje;
-  logDiv.appendChild(p);
+  logDiv.innerHTML += `<p>${mensaje}</p>`;
   logDiv.scrollTop = logDiv.scrollHeight;
-}
-
-function terminarJuego() {
-  log(vidaJugador === 0 ? "¡Has perdido!" : "¡Has ganado!");
-  document.querySelector("button[onclick='enviarAtaque()']").disabled = true;
-  document.querySelector("button[onclick='confirmarListo()']").disabled = true;
-
-  const btnReiniciar = document.getElementById('btn-reiniciar');
-  if (btnReiniciar) btnReiniciar.style.display = 'inline-block';
-}
-
-function reiniciarCombate() {
-  ataquePropio = null;
-  ataqueOponente = null;
-  listoPropio = false;
-  listoOponente = false;
-  jugador = crearMonstruo(jugador.nombre, jugador.tipo);
-  enemigo = crearMonstruo(enemigo.nombre, enemigo.tipo);
-  vidaJugador = jugador.vida;
-  vidaRival = enemigo.vida;
-  actualizarEstado();
-  log("Combate reiniciado.");
-  document.querySelector("button[onclick='enviarAtaque()']").disabled = false;
-  document.querySelector("button[onclick='confirmarListo()']").disabled = false;
-
-  const btnReiniciar = document.getElementById('btn-reiniciar');
-  if (btnReiniciar) btnReiniciar.style.display = 'none';
-}
-
-function desconectar() {
-  if (conn && conn.open) conn.close();
-  if (peer && !peer.destroyed) peer.destroy();
-  log("Te desconectaste.");
-  alert("Desconectado.");
-  location.reload();
 }
