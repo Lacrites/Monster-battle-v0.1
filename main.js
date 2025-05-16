@@ -1,4 +1,4 @@
-const peer = new Peer();
+let peer;
 let conn;
 let jugador = {};
 let enemigo = {};
@@ -11,9 +11,23 @@ let listoOponente = false;
 let vidaJugador = 0;
 let vidaRival = 0;
 
-peer.on('open', id => {
-  document.getElementById('my-id').value = id;
-});
+function crearPeer() {
+  const customId = document.getElementById('custom-id').value.trim();
+  if (!customId) {
+    alert("Ingresá un ID personalizado");
+    return;
+  }
+  peer = new Peer(customId);
+
+  peer.on('open', id => {
+    document.getElementById('my-id').value = id;
+  });
+
+  peer.on('connection', connection => {
+    conn = connection;
+    establecerConexion();
+  });
+}
 
 function conectar() {
   const remoteId = document.getElementById('remote-id').value.trim();
@@ -24,11 +38,6 @@ function conectar() {
   conn = peer.connect(remoteId);
   establecerConexion();
 }
-
-peer.on('connection', connection => {
-  conn = connection;
-  establecerConexion();
-});
 
 function establecerConexion() {
   conn.on('open', () => {
@@ -59,7 +68,7 @@ function establecerConexion() {
       ataqueOponente = data.ataque;
       listoOponente = true;
       log("Oponente confirmó estar listo.");
-      if (listoPropio) {
+      if (listoPropio && listoOponente && peer.id < conn.peer) {
         resolverTurno();
       }
     } else if (data.type === "vida") {
@@ -81,14 +90,14 @@ function establecerConexion() {
 }
 
 const presets = {
-  Zac: { vida: 30, defensa: 8 },
-  Yac: { vida: 20, defensa: 10 },
-  Xac: { vida: 10, defensa: 12 }
+  Zac: { vida: 30, defensa: 8, dadoDanio: 6 },
+  Yac: { vida: 20, defensa: 10, dadoDanio: 8 },
+  Xac: { vida: 10, defensa: 12, dadoDanio: 10 }
 };
 
 function crearMonstruo(nombre, tipo) {
-  const { vida, defensa } = presets[tipo] || presets.Yac;
-  return { nombre, tipo, vida, defensa };
+  const { vida, defensa, dadoDanio } = presets[tipo] || presets.Yac;
+  return { nombre, tipo, vida, defensa, dadoDanio };
 }
 
 function tirarDado(lados) {
@@ -105,10 +114,10 @@ function enviarAtaque() {
     return;
   }
   const tiradaD20 = tirarDado(20);
-  const tiradaD6 = tirarDado(6);
+  const tiradaD6 = tirarDado(jugador.dadoDanio);
   ataquePropio = { tiradaD20, tiradaD6 };
   conn.send({ type: "ataque", ataque: ataquePropio });
-  log(`Preparaste tu ataque: D20=${tiradaD20}, D6=${tiradaD6}`);
+  log(`Preparaste tu ataque: D20=${tiradaD20}, D${jugador.dadoDanio}=${tiradaD6}`);
 }
 
 function confirmarListo() {
@@ -123,23 +132,34 @@ function confirmarListo() {
   listoPropio = true;
   conn.send({ type: "listo", ataque: ataquePropio });
   log("Confirmaste estar listo.");
-  if (listoOponente) {
+  if (listoOponente && peer.id < conn.peer) {
     resolverTurno();
   }
 }
 
 function resolverTurno() {
-  let danioAlRival = ataquePropio.tiradaD20 >= 10 ? ataquePropio.tiradaD6 : 0;
-  let danioRecibido = ataqueOponente.tiradaD20 >= 10 ? ataqueOponente.tiradaD6 : 0;
+  const iniciativaJugador = ataquePropio.tiradaD20;
+  const iniciativaOponente = ataqueOponente.tiradaD20;
 
-  vidaRival = Math.max(0, vidaRival - danioAlRival);
-  vidaJugador = Math.max(0, vidaJugador - danioRecibido);
+  let danioAlRival = 0;
+  let danioRecibido = 0;
+
+  if (iniciativaJugador >= iniciativaOponente) {
+    if (iniciativaJugador >= 10) danioAlRival = ataquePropio.tiradaD6;
+    vidaRival = Math.max(0, vidaRival - danioAlRival);
+    if (vidaRival > 0 && iniciativaOponente >= 10) danioRecibido = ataqueOponente.tiradaD6;
+    vidaJugador = Math.max(0, vidaJugador - danioRecibido);
+  } else {
+    if (iniciativaOponente >= 10) danioRecibido = ataqueOponente.tiradaD6;
+    vidaJugador = Math.max(0, vidaJugador - danioRecibido);
+    if (vidaJugador > 0 && iniciativaJugador >= 10) danioAlRival = ataquePropio.tiradaD6;
+    vidaRival = Math.max(0, vidaRival - danioAlRival);
+  }
 
   log(`Infligiste ${danioAlRival} de daño a ${enemigo.nombre}.`);
   log(`Recibiste ${danioRecibido} de daño de ${enemigo.nombre}.`);
   actualizarEstado();
 
-  // Enviar estado actualizado para sincronización
   conn.send({
     type: "vida",
     vidaJugador: vidaJugador,
@@ -175,12 +195,36 @@ function terminarJuego() {
   document.querySelector("button[onclick='enviarAtaque()']").disabled = true;
   document.querySelector("button[onclick='confirmarListo()']").disabled = true;
 
-  // Crear botón reiniciar si no existe ya
   if (!document.getElementById('btn-reiniciar')) {
     const btnReiniciar = document.createElement('button');
-    btnReiniciar.textContent = 'Reiniciar';
+    btnReiniciar.textContent = 'Reiniciar combate';
     btnReiniciar.id = 'btn-reiniciar';
-    btnReiniciar.onclick = () => location.reload();
+    btnReiniciar.onclick = reiniciarCombate;
     document.getElementById('juego').appendChild(btnReiniciar);
   }
+}
+
+function reiniciarCombate() {
+  ataquePropio = null;
+  ataqueOponente = null;
+  listoPropio = false;
+  listoOponente = false;
+  jugador = crearMonstruo(jugador.nombre, jugador.tipo);
+  enemigo = crearMonstruo(enemigo.nombre, enemigo.tipo);
+  vidaJugador = jugador.vida;
+  vidaRival = enemigo.vida;
+  actualizarEstado();
+  log("Combate reiniciado.");
+  document.querySelector("button[onclick='enviarAtaque()']").disabled = false;
+  document.querySelector("button[onclick='confirmarListo()']").disabled = false;
+  const btn = document.getElementById('btn-reiniciar');
+  if (btn) btn.remove();
+}
+
+function desconectar() {
+  if (conn && conn.open) conn.close();
+  if (peer && !peer.destroyed) peer.destroy();
+  log("Te desconectaste.");
+  alert("Desconectado.");
+  location.reload();
 }
