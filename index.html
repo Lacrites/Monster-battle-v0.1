@@ -17,9 +17,9 @@
 
     <label for="remote-id">ID del oponente:</label>
     <input type="text" id="remote-id" placeholder="Pega el ID del otro jugador" />
-    <button onclick="conectar()">Conectar</button>
+    <button id="btn-conectar" onclick="conectar()">Conectar</button>
 
-    <!-- Sección de selección de personaje, oculta inicialmente -->
+    <!-- Sección de selección de personaje -->
     <div id="seleccion-personaje" style="display:none;">
       <h3>Seleccioná tu personaje</h3>
       <label for="nombre">Nombre:</label>
@@ -35,14 +35,14 @@
       <button onclick="iniciarCombate()">Iniciar Combate</button>
     </div>
 
-    <!-- Sección de juego, oculta inicialmente -->
+    <!-- Sección de juego -->
     <div id="juego" style="display:none;">
       <p id="estado">Esperando datos...</p>
       <button id="btn-atacar" onclick="enviarAtaque()">Atacar</button>
       <button id="btn-listo" onclick="confirmarListo()" disabled>Listo</button>
       <button onclick="reiniciarCombate()" id="btn-reiniciar" style="display:none;">Reiniciar Combate</button>
       <button class="disconnect" onclick="desconectar()">Desconectar</button>
-      <div class="log" id="log"></div>
+      <div class="log" id="log" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 10px;"></div>
     </div>
   </div>
 
