@@ -11,7 +11,7 @@ let listoOponente = false;
 let vidaJugador = 0;
 let vidaRival = 0;
 
-function crearPeer() {
+function crearPeerPersonalizado() {
   const customId = document.getElementById('custom-id').value.trim();
   if (!customId) {
     alert("Ingresá un ID personalizado");
@@ -19,18 +19,24 @@ function crearPeer() {
   }
   peer = new Peer(customId);
 
+  const botonEstablecer = document.querySelector("button[onclick='crearPeerPersonalizado()']");
+  botonEstablecer.disabled = true;
+  document.getElementById('custom-id').disabled = true;
+
   peer.on('open', id => {
-    document.getElementById('my-id').value = id;
-    log(`Peer creado con ID: ${id}`);
+    document.getElementById('conexion-estado').textContent = `ID establecido correctamente: ${id}`;
+  });
+
+  peer.on('error', err => {
+    alert('Error con PeerJS: ' + err);
+    botonEstablecer.disabled = false;
+    document.getElementById('custom-id').disabled = false;
+    document.getElementById('conexion-estado').textContent = '';
   });
 
   peer.on('connection', connection => {
     conn = connection;
     establecerConexion();
-  });
-
-  peer.on('error', err => {
-    alert("Error en Peer: " + err);
   });
 }
 
@@ -40,35 +46,21 @@ function conectar() {
     alert("Por favor ingresa el ID del oponente");
     return;
   }
-  if (!peer || peer.destroyed) {
-    alert("Primero establecé tu ID personalizado");
+  if (!peer || peer.disconnected) {
+    alert("Primero establece tu ID personalizado");
     return;
   }
   conn = peer.connect(remoteId);
-
-  conn.on('open', () => {
-    establecerConexion();
-  });
-
-  conn.on('error', err => {
-    alert("Error en la conexión: " + err);
-  });
+  establecerConexion();
 }
 
 function establecerConexion() {
   conn.on('open', () => {
-    const nombre = document.getElementById('nombre').value.trim();
-    const tipo = document.getElementById('tipo').value;
-    if (!nombre) {
-      alert("Ingresa tu nombre para continuar");
-      conn.close();
-      return;
-    }
-    jugador = crearMonstruo(nombre, tipo);
-    vidaJugador = jugador.vida;
-    conn.send({ type: "inicio", datos: jugador });
-    document.getElementById('juego').style.display = 'block';
-    log("Conectado. Esperando datos del oponente...");
+    // Mostrar sección para elegir personaje y ocultar botones de conectar
+    document.getElementById('seleccion-personaje').style.display = 'block';
+    document.querySelector("button[onclick='conectar()']").disabled = true;
+    document.getElementById('remote-id').disabled = true;
+    log("Conectado. Por favor selecciona tu personaje y nombre.");
   });
 
   conn.on('data', data => {
@@ -114,6 +106,27 @@ const presets = {
 function crearMonstruo(nombre, tipo) {
   const { vida, defensa, dadoDanio } = presets[tipo] || presets.Yac;
   return { nombre, tipo, vida, defensa, dadoDanio };
+}
+
+function iniciarCombate() {
+  const nombre = document.getElementById('nombre').value.trim();
+  const tipo = document.getElementById('tipo').value;
+  if (!nombre) {
+    alert("Ingresa tu nombre para continuar");
+    return;
+  }
+  jugador = crearMonstruo(nombre, tipo);
+  vidaJugador = jugador.vida;
+
+  // Enviar datos del jugador al oponente
+  conn.send({ type: "inicio", datos: jugador });
+
+  // Ocultar selección y mostrar la interfaz de juego
+  document.getElementById('seleccion-personaje').style.display = 'none';
+  document.getElementById('juego').style.display = 'block';
+
+  actualizarEstado();
+  log("¡Combate iniciado! Prepará tu ataque.");
 }
 
 function tirarDado(lados) {
@@ -211,13 +224,8 @@ function terminarJuego() {
   document.querySelector("button[onclick='enviarAtaque()']").disabled = true;
   document.querySelector("button[onclick='confirmarListo()']").disabled = true;
 
-  if (!document.getElementById('btn-reiniciar')) {
-    const btnReiniciar = document.createElement('button');
-    btnReiniciar.textContent = 'Reiniciar combate';
-    btnReiniciar.id = 'btn-reiniciar';
-    btnReiniciar.onclick = reiniciarCombate;
-    document.getElementById('juego').appendChild(btnReiniciar);
-  }
+  const btnReiniciar = document.getElementById('btn-reiniciar');
+  if (btnReiniciar) btnReiniciar.style.display = 'inline-block';
 }
 
 function reiniciarCombate() {
@@ -233,8 +241,9 @@ function reiniciarCombate() {
   log("Combate reiniciado.");
   document.querySelector("button[onclick='enviarAtaque()']").disabled = false;
   document.querySelector("button[onclick='confirmarListo()']").disabled = false;
-  const btn = document.getElementById('btn-reiniciar');
-  if (btn) btn.remove();
+
+  const btnReiniciar = document.getElementById('btn-reiniciar');
+  if (btnReiniciar) btnReiniciar.style.display = 'none';
 }
 
 function desconectar() {
