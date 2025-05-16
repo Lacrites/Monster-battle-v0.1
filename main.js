@@ -56,7 +56,6 @@ function conectar() {
 
 function establecerConexion() {
   conn.on('open', () => {
-    // Mostrar sección para elegir personaje y ocultar botones de conectar
     document.getElementById('seleccion-personaje').style.display = 'block';
     document.querySelector("button[onclick='conectar()']").disabled = true;
     document.getElementById('remote-id').disabled = true;
@@ -118,14 +117,11 @@ function iniciarCombate() {
   jugador = crearMonstruo(nombre, tipo);
   vidaJugador = jugador.vida;
 
-  // Enviar datos del jugador al oponente
   conn.send({ type: "inicio", datos: jugador });
 
-  // Ocultar selección y mostrar la interfaz de juego
   document.getElementById('seleccion-personaje').style.display = 'none';
   document.getElementById('juego').style.display = 'block';
 
-  // Ajustar estado botones para nuevo turno
   document.getElementById('btn-atacar').disabled = false;
   document.getElementById('btn-listo').disabled = true;
 
@@ -152,9 +148,9 @@ function enviarAtaque() {
   conn.send({ type: "ataque", ataque: ataquePropio });
   log(`Preparaste tu ataque: D20=${tiradaD20}, D${jugador.dadoDanio}=${tiradaD6}`);
 
-  // Deshabilitar botón de atacar y habilitar botón listo
   document.getElementById('btn-atacar').disabled = true;
   document.getElementById('btn-listo').disabled = false;
+  guardarEstadoLocal();
 }
 
 function confirmarListo() {
@@ -170,8 +166,8 @@ function confirmarListo() {
   conn.send({ type: "listo", ataque: ataquePropio });
   log("Confirmaste estar listo.");
 
-  // Deshabilitar botón listo para evitar múltiples clicks
   document.getElementById('btn-listo').disabled = true;
+  guardarEstadoLocal();
 
   if (listoOponente && peer.id < conn.peer) {
     resolverTurno();
@@ -207,13 +203,11 @@ function resolverTurno() {
     vidaRival: vidaRival
   });
 
-  // Resetear estados de ataque y listo al terminar turno
   ataquePropio = null;
   ataqueOponente = null;
   listoPropio = false;
   listoOponente = false;
 
-  // Reactivar botones para nuevo turno solo si juego no terminó
   if (vidaJugador > 0 && vidaRival > 0) {
     document.getElementById('btn-atacar').disabled = false;
     document.getElementById('btn-listo').disabled = true;
@@ -224,6 +218,7 @@ function resolverTurno() {
 
 function actualizarEstado() {
   document.getElementById('estado').textContent = `Tu vida: ${vidaJugador} | Vida del oponente: ${vidaRival}`;
+  guardarEstadoLocal();
 }
 
 function terminarJuego() {
@@ -237,18 +232,23 @@ function terminarJuego() {
     log(`Ganaste! ${jugador.nombre} ganó.`);
     alert(`Ganaste! ${jugador.nombre} ganó.`);
   }
+
   document.getElementById('btn-atacar').disabled = true;
   document.getElementById('btn-listo').disabled = true;
   document.getElementById('btn-reiniciar').style.display = 'inline-block';
+
+  limpiarEstadoLocal();
 }
 
 function reiniciarCombate() {
+  limpiarEstadoLocal();
   location.reload();
 }
 
 function desconectar() {
   if (conn) conn.close();
   if (peer) peer.destroy();
+  limpiarEstadoLocal();
   location.reload();
 }
 
@@ -257,3 +257,61 @@ function log(mensaje) {
   logDiv.innerHTML += `<p>${mensaje}</p>`;
   logDiv.scrollTop = logDiv.scrollHeight;
 }
+
+function guardarEstadoLocal() {
+  const estado = {
+    jugador,
+    enemigo,
+    vidaJugador,
+    vidaRival,
+    ataquePropio,
+    ataqueOponente,
+    listoPropio,
+    listoOponente
+  };
+  localStorage.setItem("combateEstado", JSON.stringify(estado));
+}
+
+function restaurarEstadoLocal() {
+  const estadoGuardado = localStorage.getItem("combateEstado");
+  if (!estadoGuardado) return false;
+
+  try {
+    const estado = JSON.parse(estadoGuardado);
+    jugador = estado.jugador;
+    enemigo = estado.enemigo;
+    vidaJugador = estado.vidaJugador;
+    vidaRival = estado.vidaRival;
+    ataquePropio = estado.ataquePropio;
+    ataqueOponente = estado.ataqueOponente;
+    listoPropio = estado.listoPropio;
+    listoOponente = estado.listoOponente;
+
+    document.getElementById('seleccion-personaje').style.display = 'none';
+    document.getElementById('juego').style.display = 'block';
+
+    actualizarEstado();
+    log("Estado del combate restaurado desde la sesión anterior.");
+
+    if (!ataquePropio) {
+      document.getElementById('btn-atacar').disabled = false;
+      document.getElementById('btn-listo').disabled = true;
+    } else if (!listoPropio) {
+      document.getElementById('btn-atacar').disabled = true;
+      document.getElementById('btn-listo').disabled = false;
+    }
+
+    return true;
+  } catch (e) {
+    console.error("Error al restaurar estado:", e);
+    return false;
+  }
+}
+
+function limpiarEstadoLocal() {
+  localStorage.removeItem("combateEstado");
+}
+
+window.addEventListener('load', () => {
+  restaurarEstadoLocal();
+});
