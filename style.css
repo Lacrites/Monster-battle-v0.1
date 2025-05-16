@@ -36,3 +36,33 @@ button + button {
   overflow-y: auto;
   border-radius: 5px;
 }
+
+#juego button {
+  width: calc(50% - 5px);
+  display: inline-block;
+}
+
+#btn-reiniciar {
+  background-color: #ff9800;
+  color: white;
+}
+
+#btn-reiniciar:hover {
+  background-color: #e68900;
+}
+
+button.disconnect {
+  background-color: #f44336;
+  color: white;
+}
+
+button.disconnect:hover {
+  background-color: #d32f2f;
+}
+
+@media (max-width: 500px) {
+  #juego button {
+    width: 100%;
+    margin-top: 5px;
+  }
+}
