@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Mini Juego PvP de Monstruos</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -11,7 +11,7 @@
     <h2>Conectarse al Juego</h2>
 
     <label for="nombre">Nombre:</label>
-    <input type="text" id="nombre" placeholder="Tu nombre">
+    <input type="text" id="nombre" placeholder="Tu nombre" />
 
     <label for="tipo">Tipo de monstruo:</label>
     <select id="tipo">
@@ -20,20 +20,19 @@
       <option value="Xac">Xac</option>
     </select>
 
-    <label for="my-id">Tu ID:</label>
-    <input type="text" id="my-id" placeholder="Elegí tu ID personalizado">
+    <label for="custom-id">Tu ID personalizado:</label>
+    <input type="text" id="custom-id" placeholder="Elegí tu ID personalizado" />
 
     <label for="remote-id">ID del oponente:</label>
-    <input type="text" id="remote-id" placeholder="Pega el ID del otro jugador">
+    <input type="text" id="remote-id" placeholder="Pega el ID del otro jugador" />
 
-    <button onclick="crearPeerPersonalizado()">Establecer ID</button>
+    <button onclick="crearPeer()">Establecer ID</button>
     <button onclick="conectar()">Conectar</button>
 
     <div id="juego" style="display:none;">
       <p id="estado">Esperando datos...</p>
       <button onclick="enviarAtaque()">Atacar</button>
       <button onclick="confirmarListo()">Listo</button>
-      <button onclick="reiniciarCombate()" id="btn-reiniciar" style="display:none;">Reiniciar Combate</button>
       <button onclick="desconectar()">Desconectar</button>
       <div class="log" id="log"></div>
     </div>
