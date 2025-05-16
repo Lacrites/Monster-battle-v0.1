@@ -21,17 +21,20 @@
     </select>
 
     <label for="my-id">Tu ID:</label>
-    <input type="text" id="my-id" readonly>
+    <input type="text" id="my-id" placeholder="Elegí tu ID personalizado">
 
     <label for="remote-id">ID del oponente:</label>
     <input type="text" id="remote-id" placeholder="Pega el ID del otro jugador">
 
+    <button onclick="crearPeerPersonalizado()">Establecer ID</button>
     <button onclick="conectar()">Conectar</button>
 
     <div id="juego" style="display:none;">
       <p id="estado">Esperando datos...</p>
       <button onclick="enviarAtaque()">Atacar</button>
       <button onclick="confirmarListo()">Listo</button>
+      <button onclick="reiniciarCombate()" id="btn-reiniciar" style="display:none;">Reiniciar Combate</button>
+      <button onclick="desconectar()">Desconectar</button>
       <div class="log" id="log"></div>
     </div>
   </div>
