@@ -26,12 +26,13 @@ label, select, input {
   border: 1.5px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 input:focus, select:focus {
   outline: none;
   border-color: #3498db;
   background-color: #f0f8ff;
+  box-shadow: 0 0 5px 1px #3498dbaa;
 }
 button {
   margin-top: 15px;
@@ -44,10 +45,11 @@ button {
   cursor: pointer;
   background-color: #3498db;
   color: white;
-  transition: background-color 0.25s ease;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 button:hover:not(:disabled) {
   background-color: #2980b9;
+  box-shadow: 0 4px 8px #2980b933;
 }
 button:disabled {
   background-color: #95a5a6;
@@ -85,6 +87,9 @@ button.disconnect:hover {
   margin-top: 10px;
   font-weight: 700;
   text-align: center;
+  color: #27ae60;
+  font-size: 1.1rem;
+  min-height: 1.3em;
 }
 
 .log {
@@ -98,6 +103,7 @@ button.disconnect:hover {
   font-size: 0.9rem;
   color: #444;
   box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+  white-space: pre-wrap;
 }
 
 @media (max-width: 500px) {
