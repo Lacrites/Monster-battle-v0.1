@@ -21,11 +21,16 @@ function crearPeer() {
 
   peer.on('open', id => {
     document.getElementById('my-id').value = id;
+    log(`Peer creado con ID: ${id}`);
   });
 
   peer.on('connection', connection => {
     conn = connection;
     establecerConexion();
+  });
+
+  peer.on('error', err => {
+    alert("Error en Peer: " + err);
   });
 }
 
@@ -35,8 +40,19 @@ function conectar() {
     alert("Por favor ingresa el ID del oponente");
     return;
   }
+  if (!peer || peer.destroyed) {
+    alert("Primero establecé tu ID personalizado");
+    return;
+  }
   conn = peer.connect(remoteId);
-  establecerConexion();
+
+  conn.on('open', () => {
+    establecerConexion();
+  });
+
+  conn.on('error', err => {
+    alert("Error en la conexión: " + err);
+  });
 }
 
 function establecerConexion() {
