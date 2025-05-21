@@ -169,7 +169,7 @@ function confirmarListo() {
   document.getElementById('btn-listo').disabled = true;
   guardarEstadoLocal();
 
-  if (listoOponente && peer.id < conn.peer) {
+  if (listoOponente && listoPropio && peer.id < conn.peer) {
     resolverTurno();
   }
 }
@@ -203,16 +203,15 @@ function resolverTurno() {
     vidaRival: vidaRival
   });
 
-  ataquePropio = null;
-  ataqueOponente = null;
-  listoPropio = false;
-  listoOponente = false;
-
-  guardarEstadoLocal();
-
   if (vidaJugador > 0 && vidaRival > 0) {
+    ataquePropio = null;
+    ataqueOponente = null;
+    listoPropio = false;
+    listoOponente = false;
+
     document.getElementById('btn-atacar').disabled = false;
     document.getElementById('btn-listo').disabled = true;
+    guardarEstadoLocal();
   } else {
     terminarJuego();
   }
@@ -295,20 +294,12 @@ function restaurarEstadoLocal() {
     actualizarEstado();
     log("Estado del combate restaurado desde la sesión anterior.");
 
-    if (vidaJugador <= 0 || vidaRival <= 0) {
-      terminarJuego();
-      return true;
-    }
-
     if (!ataquePropio) {
       document.getElementById('btn-atacar').disabled = false;
       document.getElementById('btn-listo').disabled = true;
     } else if (!listoPropio) {
       document.getElementById('btn-atacar').disabled = true;
       document.getElementById('btn-listo').disabled = false;
-    } else {
-      document.getElementById('btn-atacar').disabled = true;
-      document.getElementById('btn-listo').disabled = true;
     }
 
     return true;
