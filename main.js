@@ -208,6 +208,8 @@ function resolverTurno() {
   listoPropio = false;
   listoOponente = false;
 
+  guardarEstadoLocal();
+
   if (vidaJugador > 0 && vidaRival > 0) {
     document.getElementById('btn-atacar').disabled = false;
     document.getElementById('btn-listo').disabled = true;
@@ -293,12 +295,20 @@ function restaurarEstadoLocal() {
     actualizarEstado();
     log("Estado del combate restaurado desde la sesión anterior.");
 
+    if (vidaJugador <= 0 || vidaRival <= 0) {
+      terminarJuego();
+      return true;
+    }
+
     if (!ataquePropio) {
       document.getElementById('btn-atacar').disabled = false;
       document.getElementById('btn-listo').disabled = true;
     } else if (!listoPropio) {
       document.getElementById('btn-atacar').disabled = true;
       document.getElementById('btn-listo').disabled = false;
+    } else {
+      document.getElementById('btn-atacar').disabled = true;
+      document.getElementById('btn-listo').disabled = true;
     }
 
     return true;
